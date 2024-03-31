@@ -1,39 +1,81 @@
-// {{ .Name }}Names returns a list of possible string values of {{ .Name }}.
-func {{ .Name }}Names() []string {
-	return []string{
+type {{ .Type }} string
+
+const (
 {{- range .Enumes }}
-		"{{.Value}}",
+	{{ $.Type }}_{{ .Value }} {{ $.Type }} = "{{ .Value }}"
 {{- end }}
-    }
+)
+
+const (
+{{- range .Enumes }}
+	{{ $.Type }}Comment_{{ .Value }} = "{{ .Comment }}"
+{{- end }}
+)
+
+var {{ .Type }}Names = []string{
+{{- range .Enumes }}
+	"{{ .Value }}",
+{{- end }}
 }
 
-// {{ .Name }}Values returns a list of the values for {{ .Name }}
-func {{ .Name }}Values() []{{ .Name }} {
-	return []{{ .Name }}{
+var {{ .Type }}Values = []{{ .Type }}{
 {{- range .Enumes }}
-		{{.Name}}_{{.Value}},
+	{{ $.Type }}_{{ .Value }},
 {{- end }}
-	}
 }
 
-// IsValid provides a quick way to determine if the typed value is
-// part of the allowed enumerated values
-func (x {{ .Name }}) IsValid() bool {
-	_, err := Parse{{ .Name }}(string(x))
+var {{ .Type }}Comments = []string{
+{{- range .Enumes }}
+	{{ $.Type }}Comment_{{ .Value }},
+{{- end }}
+}
+
+func (x {{ .Type }}) IsValid() bool {
+	_, err := Parse{{ .Type }}(string(x))
 	return err == nil
 }
 
-// Parse{{ .Name }} attempts to convert a string to a {{ .Name }}.
-func Parse{{ .Name }}(name string) (v {{ .Name }}, err error) {
-	if v, ok := {{ .Name }}_value[name]; ok {
-		return {{ .Name }}(v), nil
-	}
-	return v, fmt.Errorf("%s is not a valid {{ .Name }}", name)
+func (x {{ .Type }}) String() string {
+	return string(x)
 }
 
-// MustParse{{ .Name }} converts a string to a {{ .Name }}, and panics if is not valid.
-func MustParse{{ .Name }}(name string) {{ .Name }} {
-	val, err := Parse{{ .Name }}(name)
+func (x {{ .Type }}) Comment() string {
+	for idx, item := range {{ .Type }}Values {
+		if item == x {
+			return {{ .Type }}Comments[idx]
+		}
+	}
+	return ""
+}
+
+func Parse{{ .Type }}(name string) (v {{ .Type }}, err error) {
+	for idx, item := range {{ .Type }}Names {
+		if item == name {
+			return {{ .Type }}Values[idx], nil
+		}
+	}
+	return v, fmt.Errorf("%s is not a valid {{ .Type }}", name)
+}
+
+func MustParse{{ .Type }}(name string) {{ .Type }} {
+	val, err := Parse{{ .Type }}(name)
+	if err != nil {
+		panic(err)
+	}
+	return val
+}
+
+func Parse{{ .Type }}Comment(comment string) (v {{ .Type }}, err error) {
+	for idx, item := range {{ .Type }}Comments {
+		if item == comment {
+			return {{ .Type }}Values[idx], nil
+		}
+	}
+	return v, fmt.Errorf("%s is not a valid {{ .Type }}", comment)
+}
+
+func MustParse{{ .Type }}Comment(comment string) {{ .Type }} {
+	val, err := Parse{{ .Type }}Comment(comment)
 	if err != nil {
 		panic(err)
 	}

@@ -20,6 +20,7 @@ type enumInfo struct {
 
 type enumWrapper struct {
 	Name   string
+	Type   string
 	Enumes []*enumInfo
 }
 
