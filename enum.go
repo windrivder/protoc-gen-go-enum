@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"strings"
 	"unicode"
 
@@ -33,8 +34,11 @@ func generateFile(gen *protogen.Plugin, file *protogen.File) *protogen.Generated
 func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.GeneratedFile) {
 	g.P()
 	index := 0
+
+	enums := []string{}
 	for _, message := range file.Messages {
 		for _, enum := range message.Enums {
+			enums = append(enums, string(message.Desc.Name()))
 			if !genEnum(gen, file, g, enum, string(message.Desc.Name())) {
 				index++
 			}
@@ -43,6 +47,27 @@ func generateFileContent(gen *protogen.Plugin, file *protogen.File, g *protogen.
 	// If all enums do not contain 'errors.code', the current file is skipped
 	if index == 0 {
 		g.Skip()
+	} else {
+		tmpl := `"%s": mapEnums(%sValues, func(item %s) enums { return item })`
+		for idx, enum := range enums {
+			enums[idx] = fmt.Sprintf(tmpl, enum, enum, enum)
+		}
+		g.P(fmt.Sprintf(`type enums interface {
+	String() string
+	Comment() string
+}
+
+func mapEnums[T any](collection []T, iteratee func(item T) enums) []enums {
+	result := make([]enums, len(collection))
+	for i, item := range collection {
+		result[i] = iteratee(item)
+	}
+	return result
+}
+
+var Enums = map[string][]enums{
+	%s,
+}`, strings.Join(enums, ",\n\t")))
 	}
 }
 
